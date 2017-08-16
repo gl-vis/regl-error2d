@@ -1,0 +1,41 @@
+{
+  "name": "regl-error2d",
+  "version": "1.0.0",
+  "description": "Render error bars for the set of points",
+  "main": "index.js",
+  "scripts": {
+    "test": "budo test",
+    "build": "browserify test.js -g babelify | indexhtmlify | metadataify | github-cornerify > index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dfcreative/regl-error2d.git"
+  },
+  "keywords": [
+    "regl",
+    "plotly"
+  ],
+  "author": "Dima Yv <df.creative@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dfcreative/regl-error2d/issues"
+  },
+  "homepage": "https://github.com/dfcreative/regl-error2d#readme",
+  "dependencies": {
+    "color-rgba": "^1.1.0",
+    "object-assign": "^4.1.1",
+    "regl": "^1.3.0"
+  },
+  "devDependencies": {
+    "nice-color-palettes": "^2.0.0",
+    "next-pow-2": "^1.0.0",
+    "canvas-fit": "^1.5.0",
+    "enable-mobile": "^1.0.7",
+    "fps-indicator": "^1.1.0",
+    "gauss-random": "^1.0.1",
+    "mouse-change": "^1.4.0",
+    "mouse-wheel": "^1.2.0",
+    "nanoraf": "^3.0.1",
+    "pan-zoom": "^2.0.0"
+  }
+}

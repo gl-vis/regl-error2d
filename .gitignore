@@ -1,0 +1,9 @@
+demo
+design
+instances
+*node_modules
+index.html
+*.psd
+package-lock.json
+docs
+gh-pages
