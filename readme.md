@@ -2,14 +2,16 @@
 
 Draw error bars for a set of points with regl.
 
-[image]
+![regl-error2d](https://github.com/dfcreative/regl-error2d/blob/master/preview.png?raw=true)
 
-Remake on [gl-error2d](https://github.com/gl-vis/gl-error2d).
+Remake on [gl-error2d](https://github.com/gl-vis/gl-error2d):
 
-* `color` may take list of colors for per-bar color
-* max number of bars extended from 1e5 to 4e6 (40 times) via instanced draw
-* `lineWidth` and `capSize` normalized to reflect actual pixels
-* enhanced updating performance by delegating range calculations to vertex shader
+* `color` may take list of colors for per-bar color.
+* max number of bars extended from 1e5 to 4e6 (40 times) via instanced draw.
+* `lineWidth` and `capSize` normalized to reflect actual pixels.
+* enhanced updating performance by delegating range calculations to vertex shader.
+
+[Demo](https://dfcreative.github.io/regl-error2d)
 
 ## Usage
 
