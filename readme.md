@@ -44,14 +44,14 @@ Redraw points and optionally update options.
 
 Option | Default | Description
 ---|---|---
-`positions`, `points` | `[]` | An array of the unrolled xy coordinates of the points as `[x,y, x,y, ...]` or array of points `[[x,y], [x,y], ...]`.
+`positions`, `points` | `[]` | An array of unrolled xy coordinates of the points as `[x,y, x,y, ...]` or array of points `[[x,y], [x,y], ...]`.
 `errors` | `[]` | Array with error values corresponding to the points `[e0l,e0r,e0b,e0t, e1l,e1r,e1b,e1t, ...]`
 `capSize` | `5` | Error bar cap size, in pixels
 `lineWidth` | `1` | Error bar line width, in pixels
-`color`, `colors` | `'red'` | Color or array with colors. Each color can be a css-color string or an array with float `0..1` values.
-`bounds` | `null` | Limits for visible data
-`viewport` | `null` | Limits withing the visible area
-`scissor` | `null` | Limits withing the visible area
+`color`, `colors` | `'red'` | Color or array with colors. Each color can be a css color string or an array with float `0..1` values.
+`range` | `null` | Limit visible data
+`viewport` | `null` | Limit visible area within the canvas
+`scissor` | `null` | Limit visible area within the canvas
 
 ## License
 
