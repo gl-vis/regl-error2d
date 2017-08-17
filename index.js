@@ -99,8 +99,6 @@ function Error2D (options) {
     regl = createRegl(opts)
   }
 
-  //TODO: use instanced colors
-  //TODO: use instanced positions
   //color per-point
   colorBuffer = regl.buffer({
     usage: 'dynamic',
@@ -158,7 +156,6 @@ function Error2D (options) {
       vec2 bxy = vec2(bounds.z - bounds.x, bounds.w - bounds.y);
       vec2 rxy = vec2(range.z - range.x, range.w - range.y);
 
-      //FIXME: add more step fn
       vec2 dxy = -step(.5, direction.xy) * error.xz + step(direction.xy, vec2(-.5)) * error.yw;
 
       vec2 pos = (position.xy + dxy - range.xy) / rxy;
@@ -273,7 +270,7 @@ function Error2D (options) {
       range: range,
       lineWidth: lineWidth,
       capSize: capSize,
-      count: count //count points times 4 errors
+      count: count
     })
   }
 
