@@ -1,13 +1,13 @@
 'use strict'
 
 const createRegl = require('regl')
-const getBounds = require('../array-bounds')
+const getBounds = require('array-bounds')
 const rgba = require('color-rgba')
 
 module.exports = Error2D
 
 const WEIGHTS = [
-  //[left,right], [lineTop/lineBottom], [capLeft/capRight]
+  //direction, lineWidth shift, capSize shift
 
   // x-error bar
   [1, 0, 0, 1, 0, 0],
@@ -74,7 +74,7 @@ function Error2D (options) {
   let regl, range, viewport, scissor,
       positions = [], errors = [], count = 0, bounds, color = [0,0,0,255],
       drawErrors,
-      positionBuffer, colorBuffer,
+      positionBuffer, colorBuffer, errorBuffer, meshBuffer,
       lineWidth = 1, capSize = 5
 
   if (options.regl) regl = options.regl
@@ -91,20 +91,39 @@ function Error2D (options) {
       if (options.gl) opts.gl = options.gl
     }
 
+    //FIXME: use fallback if not available
+    opts.optionalExtensions = [
+      'ANGLE_instanced_arrays'
+    ]
+
     regl = createRegl(opts)
   }
 
   //TODO: use instanced colors
   //TODO: use instanced positions
+  //color per-point
   colorBuffer = regl.buffer({
     usage: 'dynamic',
     type: 'uint8',
     data: null
   })
+  //xy-position per-point
   positionBuffer = regl.buffer({
     usage: 'dynamic',
     type: 'float',
     data: null
+  })
+  //4 errors per-point
+  errorBuffer = regl.buffer({
+    usage: 'dynamic',
+    type: 'float',
+    data: null
+  })
+  //error bar mesh
+  meshBuffer = regl.buffer({
+    usage: 'static',
+    type: 'float',
+    data: WEIGHTS
   })
 
 
@@ -117,35 +136,36 @@ function Error2D (options) {
     vert: `
     precision highp float;
 
-    attribute vec2 positionHi;
-    attribute vec2 positionLo;
-    attribute vec2 pixelOffset;
+    attribute vec2 position;
+    attribute vec4 error;
     attribute vec4 color;
 
-    uniform vec2 scaleHi, scaleLo, translateHi, translateLo, pixelScale;
+    attribute vec2 direction, lineOffset, capOffset;
+
+    uniform vec4 bounds, range;
+    uniform vec2 pixelScale;
+    uniform float lineWidth, capSize;
 
     varying vec4 fragColor;
 
-    //TODO: test if GPU has base-64 calculations
-    vec2 project(vec2 scHi, vec2 trHi, vec2 scLo, vec2 trLo, vec2 posHi, vec2 posLo) {
-      return (posHi + trHi) * scHi
-           + (posLo + trLo) * scHi
-           + (posHi + trHi) * scLo
-           + (posLo + trLo) * scLo;
-    }
-
     void main() {
-      gl_Position = vec4(positionHi, 0, 1);
+      gl_Position = vec4(position, 0, 1);
 
       fragColor = color;
 
-      vec3 scrPosition = vec3(
-             project(scaleHi, translateHi, scaleLo, translateLo, positionHi, positionLo),
-             1);
-      gl_Position = vec4(
-        scrPosition.xy + scrPosition.z * pixelScale * pixelOffset,
-        0,
-        scrPosition.z);
+      vec2 pixelOffset = lineWidth * lineOffset + (capSize + lineWidth) * capOffset;
+
+      vec2 bxy = vec2(bounds.z - bounds.x, bounds.w - bounds.y);
+      vec2 rxy = vec2(range.z - range.x, range.w - range.y);
+
+      //FIXME: add more step fn
+      vec2 dxy = -step(.5, direction.xy) * error.xz + step(direction.xy, vec2(-.5)) * error.yw;
+
+      vec2 pos = (position.xy + dxy - range.xy) / rxy;
+
+      pos += pixelScale * pixelOffset;
+
+      gl_Position = vec4(pos * 2. - 1., 0, 1);
     }
     `,
 
@@ -160,32 +180,46 @@ function Error2D (options) {
     `,
 
     uniforms: {
-      scaleHi: regl.prop('scaleHi'),
-      scaleLo: regl.prop('scaleLo'),
-      translateHi: regl.prop('translateHi'),
-      translateLo: regl.prop('translateLo'),
+      bounds: regl.prop('bounds'),
+      range: regl.prop('range'),
+      lineWidth: regl.prop('lineWidth'),
+      capSize: regl.prop('capSize'),
       pixelScale: ctx => [
-        2. * ctx.pixelRatio / ctx.viewportWidth,
-        2. * ctx.pixelRatio / ctx.viewportHeight
+        ctx.pixelRatio / ctx.viewportWidth,
+        ctx.pixelRatio / ctx.viewportHeight
       ]
     },
 
     attributes: {
+      //dynamic attributes
       color: ctx => {
-        return color.length <= 4 ? {constant: color} : colorBuffer
+        return color.length <= 4 ? {constant: color} : {
+          buffer: colorBuffer,
+          divisor: 1
+        }
       },
-      positionHi: {
+      position: {
         buffer: positionBuffer,
+        divisor: 1
+      },
+      error: {
+        buffer: errorBuffer,
+        divisor: 1
+      },
+
+      //static attributes
+      direction: {
+        buffer: meshBuffer,
         stride: 24,
-        offset:0
+        offset: 0
       },
-      positionLo: {
-        buffer: positionBuffer,
+      lineOffset: {
+        buffer: meshBuffer,
         stride: 24,
         offset: 8
       },
-      pixelOffset: {
-        buffer: positionBuffer,
+      capOffset: {
+        buffer: meshBuffer,
         stride: 24,
         offset: 16
       }
@@ -220,7 +254,8 @@ function Error2D (options) {
       } : viewport
     },
 
-    count: regl.prop('count')
+    instances: regl.prop('count'),
+    count: WEIGHTS.length
   })
 
 
@@ -233,23 +268,12 @@ function Error2D (options) {
 
     if (!count) return
 
-    //calc bounds fast
-    let boundX = bounds[2] - bounds[0]
-    let boundY = bounds[3] - bounds[1]
-    let dataX = range[2] - range[0]
-    let dataY = range[3] - range[1]
-
-    let scaleX = 2 * boundX / dataX
-    let scaleY = 2 * boundY / dataY
-    let translateX = (bounds[0] - range[0] - 0.5 * dataX) / boundX
-    let translateY = (bounds[1] - range[1] - 0.5 * dataY) / boundY
-
     drawErrors({
-      scaleHi: [scaleX, scaleY],
-      scaleLo: [0, 0], //FIXME: add precision
-      translateHi: [translateX, translateY],
-      translateLo: [0, 0], //FIXME: add precision
-      count: count * WEIGHTS.length
+      bounds: bounds,
+      range: range,
+      lineWidth: lineWidth,
+      capSize: capSize,
+      count: count //count points times 4 errors
     })
   }
 
@@ -280,13 +304,15 @@ function Error2D (options) {
       else {
         errors = options.errors
       }
+
+      errorBuffer(errors)
     }
 
     //update positions
     if (options.data) options.positions = options.data
     if (options.points) options.positions = options.points
     if (options.positions && options.positions.length) {
-      //unroll positions
+      //unroll
       let unrolled
       if (options.positions[0].length) {
         unrolled = Array(options.positions.length)
@@ -303,64 +329,7 @@ function Error2D (options) {
       count = Math.floor(positions.length / 2)
       bounds = getBounds(positions, 2)
 
-      //FIXME: make sure we really need increasing that bounds range
-      if (bounds[2] === bounds[0]) {
-        bounds[2] += 1
-      }
-      if (bounds[3] === bounds[1]) {
-        bounds[3] += 1
-      }
-
-      let sx = 1.0 / (bounds[2] - bounds[0])
-      let sy = 1.0 / (bounds[3] - bounds[1])
-      let tx = bounds[0]
-      let ty = bounds[1]
-
-      let bufferData = new Float32Array(count * WEIGHTS.length * 6)
-
-      let ptr = 0
-
-      for (let i = 0; i < count; ++i) {
-        let x = positions[2 * i]
-        let y = positions[2 * i + 1]
-        let ex0 = errors[4 * i]
-        let ex1 = errors[4 * i + 1]
-        let ey0 = errors[4 * i + 2]
-        let ey1 = errors[4 * i + 3]
-
-        for (let j = 0; j < WEIGHTS.length; ++j) {
-          let w = WEIGHTS[j]
-
-          let dx = w[0]
-          let dy = w[1]
-
-          if (dx < 0) {
-            dx *= ex0
-          } else if (dx > 0) {
-            dx *= ex1
-          }
-
-          if (dy < 0) {
-            dy *= ey0
-          } else if (dy > 0) {
-            dy *= ey1
-          }
-
-          //absolute offset in normalized to 0..1 coords
-          bufferData[ptr++] = sx * ((x - tx) + dx)
-          bufferData[ptr++] = sy * ((y - ty) + dy)
-
-          //FIXME: lo-precision data remainder
-          bufferData[ptr++] = 0 //bufferData[ptr-2] - bufferData[ptr-2]
-          bufferData[ptr++] = 0 //bufferData[ptr - 2] - bufferData
-
-          //relative offset in pixels
-          bufferData[ptr++] = lineWidth * w[2] + (capSize + lineWidth) * w[4]
-          bufferData[ptr++] = lineWidth * w[3] + (capSize + lineWidth) * w[5]
-        }
-      }
-
-      positionBuffer(bufferData)
+      positionBuffer(positions)
     }
 
     //process colors
@@ -403,7 +372,6 @@ function Error2D (options) {
     //update range
     if (options.range) {
       range = options.range
-      //FIXME: move here from draw call
     }
 
     //update visible attribs

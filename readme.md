@@ -7,7 +7,7 @@ Draw error bars for a set of points with regl.
 Remake on [gl-error2d](https://github.com/gl-vis/gl-error2d).
 
 * `colors` may take list of colors
-* max number of bars extended 100 times via instanced draw
+* max number of bars extended from 1e5 to 4e6 (40 times) via instanced draw
 * `lineWidth` and `capSize` normalized to reflect actual pixels
 
 ## Usage

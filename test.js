@@ -10,30 +10,40 @@ const nanoraf = require('nanoraf')
 const palettes = require('nice-color-palettes')
 
 
-let N = 1e2
+let N = 1e3
 let ratio = window.innerWidth / window.innerHeight
 let range = [-10 * ratio, -10, 10 * ratio, 10]
 let colors = palettes[Math.floor(Math.random() * palettes.length)]
 
 
-let errors = createErrors({
-	positions: generate(N),
-	errors: generate(N*2),
-	capSize: 4,
-	lineWidth: 1,
+var positions = new Float32Array(2 * N)
+var errors = new Float32Array(4 * N)
+for(var i=0; i<2*N; ++i) {
+  positions[i] = random()//i * 4 / N
+  errors[i*2] = Math.random()//1
+  errors[i*2+1] = Math.random()//1
+}
 
-	// color: Array(N).fill(0).map(() => colors[Math.floor(Math.random() * colors.length)]),
-	color: 'rgba(0, 0, 127, 1)',
+let drawErrors = createErrors({
+	positions: positions,
+	errors: errors,
+	// positions: [0,0, 10,10, -10,-10],
+	// errors: [0,0,0,0, 0,0,0,0, 0,0,0,0],
+	capSize: 4,
+	lineWidth: 2,
+
+	color: Array(N).fill(0).map(() => colors[Math.floor(Math.random() * colors.length)]),
+	// color: 'rgba(0, 0, 127, 1)',
 
 	range: range
 })
 
-errors()
+drawErrors()
 
 
 //interactions
 let prev = null
-var frame = nanoraf(errors)
+var frame = nanoraf(drawErrors)
 
 let cnv = document.body.querySelectorAll('canvas')[1]
 
@@ -67,16 +77,6 @@ panZoom(cnv, e => {
 })
 
 
-function generate(N) {
-	var positions = new Float32Array(2 * N)
-
-	for(var i=0; i<2*N; ++i) {
-	  positions[i] = random()
-	}
-
-	return positions
-}
-
 window.addEventListener('resize', () => {
-	errors()
+	drawErrors()
 })
