@@ -16,7 +16,7 @@ let range = [ -10 * ratio, -10, 10 * ratio, 10 ]
 let colors = palettes[ Math.floor(Math.random() * palettes.length) ]
 
 
-var positions = new Float32Array(2 * N)
+var positions = new Float64Array(2 * N)
 var errors = new Float32Array(4 * N)
 for(var i=0; i<2*N; ++i) {
 	positions[i] = random() //i * 4 / N

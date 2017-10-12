@@ -155,15 +155,15 @@ function Error2D (options) {
 		vert: `
 		precision highp float;
 
-		attribute vec2 position;
+		attribute vec2 position, positionFract;
 		attribute vec4 error;
 		attribute vec4 color;
 
 		attribute vec2 direction, lineOffset, capOffset;
 
-		uniform vec4 range;
 		uniform vec2 pixelScale;
 		uniform float lineWidth, capSize;
+		uniform vec2 scale, scaleFract, translate, translateFract;
 
 		varying vec4 fragColor;
 
@@ -172,11 +172,14 @@ function Error2D (options) {
 
 			vec2 pixelOffset = lineWidth * lineOffset + (capSize + lineWidth) * capOffset;
 
-			vec2 rxy = vec2(range.z - range.x, range.w - range.y);
-
 			vec2 dxy = -step(.5, direction.xy) * error.xz + step(direction.xy, vec2(-.5)) * error.yw;
 
-			vec2 pos = (position.xy + dxy - range.xy) / rxy;
+			vec2 position = position + dxy;
+
+			vec2 pos = (position + translate) * scale
+				+ (positionFract + translateFract) * scale
+				+ (position + translate) * scaleFract
+				+ (positionFract + translateFract) * scaleFract;
 
 			pos += pixelScale * pixelOffset;
 
@@ -198,6 +201,10 @@ function Error2D (options) {
 			range: regl.prop('range'),
 			lineWidth: regl.prop('lineWidth'),
 			capSize: regl.prop('capSize'),
+			scale: regl.prop('scale'),
+			translate: regl.prop('translate'),
+			scaleFract: regl.prop('scaleFract'),
+			translateFract: regl.prop('translateFract'),
 			pixelScale: ctx => [
 				ctx.pixelRatio / ctx.viewportWidth,
 				ctx.pixelRatio / ctx.viewportHeight
@@ -394,7 +401,7 @@ function Error2D (options) {
 					return errors
 				},
 				positions: (positions, state) => {
-					positions = flatten(positions)
+					positions = flatten(positions, 'float64')
 					state.count = Math.floor(positions.length / 2)
 					state.bounds = getBounds(positions, 2)
 					state.offset = pointCount
