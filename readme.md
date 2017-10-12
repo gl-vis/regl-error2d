@@ -26,9 +26,7 @@ drawErrors({
 })
 ```
 
-## API
-
-### `drawErrors = require('regl-error2d')(options|regl)`
+## `drawErrors = require('regl-error2d')(options|regl)`
 
 Create a function drawing error bars for points.
 
@@ -38,7 +36,7 @@ Option | Default | Description
 `gl`, `canvas`, `container` | `null` | Options for `regl`, if new regl is created.
 `...rest` | | `drawErrors(rest)` is invoked with the rest of options.
 
-### `drawErrors(points|options?)`
+## `drawErrors(points|options?)`
 
 Redraw points and optionally update options.
 
@@ -51,7 +49,6 @@ Option | Default | Description
 `color`, `colors` | `'red'` | Color or array with colors. Each color can be a css color string or an array with float `0..1` values.
 `range` | `null` | Limit visible data
 `viewport` | `null` | Limit visible area within the canvas
-`scissor` | `null` | Limit visible area within the canvas
 
 ## License
 

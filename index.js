@@ -3,397 +3,537 @@
 const createRegl = require('regl')
 const getBounds = require('array-bounds')
 const rgba = require('color-rgba')
+const updateDiff = require('update-diff')
+const pick = require('pick-by-alias')
+const extend = require('object-assign')
+const flatten = require('flatten-vertex-data')
 
 module.exports = Error2D
 
 const WEIGHTS = [
-  //direction, lineWidth shift, capSize shift
+	//direction, lineWidth shift, capSize shift
 
-  // x-error bar
-  [1, 0, 0, 1, 0, 0],
-  [1, 0, 0, -1, 0, 0],
-  [-1, 0, 0, -1, 0, 0],
+	// x-error bar
+	[1, 0, 0, 1, 0, 0],
+	[1, 0, 0, -1, 0, 0],
+	[-1, 0, 0, -1, 0, 0],
 
-  [-1, 0, 0, -1, 0, 0],
-  [-1, 0, 0, 1, 0, 0],
-  [1, 0, 0, 1, 0, 0],
+	[-1, 0, 0, -1, 0, 0],
+	[-1, 0, 0, 1, 0, 0],
+	[1, 0, 0, 1, 0, 0],
 
-  // x-error right cap
-  [1, 0, -1, 0, 0, 1],
-  [1, 0, -1, 0, 0, -1],
-  [1, 0, 1, 0, 0, -1],
+	// x-error right cap
+	[1, 0, -1, 0, 0, 1],
+	[1, 0, -1, 0, 0, -1],
+	[1, 0, 1, 0, 0, -1],
 
-  [1, 0, 1, 0, 0, -1],
-  [1, 0, 1, 0, 0, 1],
-  [1, 0, -1, 0, 0, 1],
+	[1, 0, 1, 0, 0, -1],
+	[1, 0, 1, 0, 0, 1],
+	[1, 0, -1, 0, 0, 1],
 
-  // x-error left cap
-  [-1, 0, -1, 0, 0, 1],
-  [-1, 0, -1, 0, 0, -1],
-  [-1, 0, 1, 0, 0, -1],
+	// x-error left cap
+	[-1, 0, -1, 0, 0, 1],
+	[-1, 0, -1, 0, 0, -1],
+	[-1, 0, 1, 0, 0, -1],
 
-  [-1, 0, 1, 0, 0, -1],
-  [-1, 0, 1, 0, 0, 1],
-  [-1, 0, -1, 0, 0, 1],
+	[-1, 0, 1, 0, 0, -1],
+	[-1, 0, 1, 0, 0, 1],
+	[-1, 0, -1, 0, 0, 1],
 
-  // y-error bar
-  [0, 1, 1, 0, 0, 0],
-  [0, 1, -1, 0, 0, 0],
-  [0, -1, -1, 0, 0, 0],
+	// y-error bar
+	[0, 1, 1, 0, 0, 0],
+	[0, 1, -1, 0, 0, 0],
+	[0, -1, -1, 0, 0, 0],
 
-  [0, -1, -1, 0, 0, 0],
-  [0, 1, 1, 0, 0, 0],
-  [0, -1, 1, 0, 0, 0],
+	[0, -1, -1, 0, 0, 0],
+	[0, 1, 1, 0, 0, 0],
+	[0, -1, 1, 0, 0, 0],
 
-  // y-error top cap
-  [0, 1, 0, -1, 1, 0],
-  [0, 1, 0, -1, -1, 0],
-  [0, 1, 0, 1, -1, 0],
+	// y-error top cap
+	[0, 1, 0, -1, 1, 0],
+	[0, 1, 0, -1, -1, 0],
+	[0, 1, 0, 1, -1, 0],
 
-  [0, 1, 0, 1, 1, 0],
-  [0, 1, 0, -1, 1, 0],
-  [0, 1, 0, 1, -1, 0],
+	[0, 1, 0, 1, 1, 0],
+	[0, 1, 0, -1, 1, 0],
+	[0, 1, 0, 1, -1, 0],
 
-  // y-error bottom cap
-  [0, -1, 0, -1, 1, 0],
-  [0, -1, 0, -1, -1, 0],
-  [0, -1, 0, 1, -1, 0],
+	// y-error bottom cap
+	[0, -1, 0, -1, 1, 0],
+	[0, -1, 0, -1, -1, 0],
+	[0, -1, 0, 1, -1, 0],
 
-  [0, -1, 0, 1, 1, 0],
-  [0, -1, 0, -1, 1, 0],
-  [0, -1, 0, 1, -1, 0]
+	[0, -1, 0, 1, 1, 0],
+	[0, -1, 0, -1, 1, 0],
+	[0, -1, 0, 1, -1, 0]
 ]
 
 
 function Error2D (options) {
-  if (!options) options = {}
-  else if (typeof options === 'function') options = {regl: options}
-  else if (options.length) options = {positions: options}
+	if (!options) options = {}
+	else if (typeof options === 'function') options = {regl: options}
+	else if (options.length) options = {positions: options}
 
-  // persistent variables
-  let regl, range, viewport, scissor,
-      positions = [], errors = [], count = 0, bounds, color = [0,0,0,255],
-      drawErrors,
-      positionBuffer, colorBuffer, errorBuffer, meshBuffer,
-      lineWidth = 1, capSize = 5
+	// persistent variables
+	let regl, gl, drawErrors, positionBuffer, positionFractBuffer, colorBuffer, errorBuffer, meshBuffer,
+			defaultOptions = {
+				color: 'black',
+				capSize: 5,
+				lineWidth: 1,
+				opacity: 1,
+				viewport: null,
+				range: null,
+				offset: 0,
+				count: 0,
+				bounds: null,
+				positions: [],
+				errors: []
+			}
 
-  if (options.regl) regl = options.regl
-  else {
-    let opts = {}
-    opts.pixelRatio = options.pixelRatio || global.devicePixelRatio
-
-    if (options instanceof HTMLCanvasElement) opts.canvas = options
-    else if (options instanceof HTMLElement) opts.container = options
-    else if (options.drawingBufferWidth || options.drawingBufferHeight) opts.gl = options
-    else {
-      if (options.canvas) opts.canvas = options.canvas
-      if (options.container) opts.container = options.container
-      if (options.gl) opts.gl = options.gl
-    }
-
-    //FIXME: use fallback if not available
-    opts.optionalExtensions = [
-      'ANGLE_instanced_arrays'
-    ]
-
-    regl = createRegl(opts)
-  }
-
-  //color per-point
-  colorBuffer = regl.buffer({
-    usage: 'dynamic',
-    type: 'uint8',
-    data: null
-  })
-  //xy-position per-point
-  positionBuffer = regl.buffer({
-    usage: 'dynamic',
-    type: 'float',
-    data: null
-  })
-  //4 errors per-point
-  errorBuffer = regl.buffer({
-    usage: 'dynamic',
-    type: 'float',
-    data: null
-  })
-  //error bar mesh
-  meshBuffer = regl.buffer({
-    usage: 'static',
-    type: 'float',
-    data: WEIGHTS
-  })
+	let groups = []
 
 
-  //TODO: detect hi-precision here
+	// regl instance
+	if (options.regl) regl = options.regl
 
-  update(options)
+	// container/gl/canvas case
+	else {
+		let opts
 
-  //drawing method
-  drawErrors = regl({
-    vert: `
-    precision highp float;
+		if (options instanceof HTMLCanvasElement) opts = {canvas: options}
+		else if (options instanceof HTMLElement) opts = {container: options}
+		else if (options.drawingBufferWidth || options.drawingBufferHeight) opts = {gl: options}
 
-    attribute vec2 position;
-    attribute vec4 error;
-    attribute vec4 color;
+		else {
+			opts = pick(options, 'pixelRatio canvas container gl extensions')
+		}
 
-    attribute vec2 direction, lineOffset, capOffset;
+		if (!opts.extensions) opts.extensions = []
 
-    uniform vec4 bounds, range;
-    uniform vec2 pixelScale;
-    uniform float lineWidth, capSize;
+		opts.extensions.push('ANGLE_instanced_arrays')
 
-    varying vec4 fragColor;
+		regl = createRegl(opts)
+	}
 
-    void main() {
-      gl_Position = vec4(position, 0, 1);
+	gl = regl._gl
 
-      fragColor = color;
+	//color per-point
+	colorBuffer = regl.buffer({
+		usage: 'dynamic',
+		type: 'uint8',
+		data: null
+	})
+	//xy-position per-point
+	positionBuffer = regl.buffer({
+		usage: 'dynamic',
+		type: 'float',
+		data: null
+	})
+	//xy-position float32-fraction
+	positionFractBuffer = regl.buffer({
+		usage: 'dynamic',
+		type: 'float',
+		data: null
+	})
+	//4 errors per-point
+	errorBuffer = regl.buffer({
+		usage: 'dynamic',
+		type: 'float',
+		data: null
+	})
+	//error bar mesh
+	meshBuffer = regl.buffer({
+		usage: 'static',
+		type: 'float',
+		data: WEIGHTS
+	})
 
-      vec2 pixelOffset = lineWidth * lineOffset + (capSize + lineWidth) * capOffset;
+	update(options)
 
-      vec2 bxy = vec2(bounds.z - bounds.x, bounds.w - bounds.y);
-      vec2 rxy = vec2(range.z - range.x, range.w - range.y);
+	//drawing method
+	drawErrors = regl({
+		vert: `
+		precision highp float;
 
-      vec2 dxy = -step(.5, direction.xy) * error.xz + step(direction.xy, vec2(-.5)) * error.yw;
+		attribute vec2 position;
+		attribute vec4 error;
+		attribute vec4 color;
 
-      vec2 pos = (position.xy + dxy - range.xy) / rxy;
+		attribute vec2 direction, lineOffset, capOffset;
 
-      pos += pixelScale * pixelOffset;
+		uniform vec4 range;
+		uniform vec2 pixelScale;
+		uniform float lineWidth, capSize;
 
-      gl_Position = vec4(pos * 2. - 1., 0, 1);
-    }
-    `,
+		varying vec4 fragColor;
 
-    frag: `
-    precision mediump float;
+		void main() {
+			fragColor = color;
 
-    varying vec4 fragColor;
+			vec2 pixelOffset = lineWidth * lineOffset + (capSize + lineWidth) * capOffset;
 
-    void main() {
-      gl_FragColor = fragColor / 255.;
-    }
-    `,
+			vec2 rxy = vec2(range.z - range.x, range.w - range.y);
 
-    uniforms: {
-      bounds: regl.prop('bounds'),
-      range: regl.prop('range'),
-      lineWidth: regl.prop('lineWidth'),
-      capSize: regl.prop('capSize'),
-      pixelScale: ctx => [
-        ctx.pixelRatio / ctx.viewportWidth,
-        ctx.pixelRatio / ctx.viewportHeight
-      ]
-    },
+			vec2 dxy = -step(.5, direction.xy) * error.xz + step(direction.xy, vec2(-.5)) * error.yw;
 
-    attributes: {
-      //dynamic attributes
-      color: ctx => {
-        return color.length <= 4 ? {constant: color} : {
-          buffer: colorBuffer,
-          divisor: 1
-        }
-      },
-      position: {
-        buffer: positionBuffer,
-        divisor: 1
-      },
-      error: {
-        buffer: errorBuffer,
-        divisor: 1
-      },
+			vec2 pos = (position.xy + dxy - range.xy) / rxy;
 
-      //static attributes
-      direction: {
-        buffer: meshBuffer,
-        stride: 24,
-        offset: 0
-      },
-      lineOffset: {
-        buffer: meshBuffer,
-        stride: 24,
-        offset: 8
-      },
-      capOffset: {
-        buffer: meshBuffer,
-        stride: 24,
-        offset: 16
-      }
-    },
+			pos += pixelScale * pixelOffset;
 
-    primitive: 'triangles',
+			gl_Position = vec4(pos * 2. - 1., 0, 1);
+		}
+		`,
 
-    blend: {
-      enable: true,
-      color: [0,0,0,1],
-      func: {
-        srcRGB:   'src alpha',
-        srcAlpha: 1,
-        dstRGB:   'one minus src alpha',
-        dstAlpha: 'one minus src alpha'
-      }
-    },
+		frag: `
+		precision mediump float;
 
-    depth: {
-      enable: false
-    },
+		varying vec4 fragColor;
 
-    scissor: ctx => {
-      return {enable: !!scissor, box: scissor}
-    },
+		void main() {
+			gl_FragColor = fragColor / 255.;
+		}
+		`,
 
-    viewport: ctx => {
-      return !viewport ? {
-        x: 0, y: 0,
-        width: ctx.drawingBufferWidth,
-        height: ctx.drawingBufferHeight
-      } : viewport
-    },
+		uniforms: {
+			range: regl.prop('range'),
+			lineWidth: regl.prop('lineWidth'),
+			capSize: regl.prop('capSize'),
+			pixelScale: ctx => [
+				ctx.pixelRatio / ctx.viewportWidth,
+				ctx.pixelRatio / ctx.viewportHeight
+			]
+		},
 
-    instances: regl.prop('count'),
-    count: WEIGHTS.length
-  })
+		attributes: {
+			//dynamic attributes
+			color: {
+				buffer: colorBuffer,
+				divisor: 1,
+			},
+			position: {
+				buffer: positionBuffer,
+				divisor: 1
+			},
+			positionFract: {
+				buffer: positionFractBuffer,
+				divisor: 1
+			},
+			error: {
+				buffer: errorBuffer,
+				divisor: 1
+			},
 
+			//static attributes
+			direction: {
+				buffer: meshBuffer,
+				stride: 24,
+				offset: 0
+			},
+			lineOffset: {
+				buffer: meshBuffer,
+				stride: 24,
+				offset: 8
+			},
+			capOffset: {
+				buffer: meshBuffer,
+				stride: 24,
+				offset: 16
+			}
+		},
 
-  //main draw method
-  function draw (opts) {
-    if (opts) {
-      update(opts)
-      if (opts.draw === false) return
-    }
+		primitive: 'triangles',
 
-    if (!count) return
+		blend: {
+			enable: true,
+			color: [0,0,0,0],
+			equation: {
+				rgb: 'add',
+				alpha: 'add'
+			},
+			func: {
+				srcRGB: 'src alpha',
+				dstRGB: 'one minus src alpha',
+				srcAlpha: 'one minus dst alpha',
+				dstAlpha: 'one'
+			}
+		},
 
-    drawErrors({
-      bounds: bounds,
-      range: range,
-      lineWidth: lineWidth,
-      capSize: capSize,
-      count: count
-    })
-  }
+		depth: {
+			enable: false
+		},
 
-  function update (options) {
-    if (options.length != null) options = {positions: options}
+		scissor: {
+			enable: true,
+			box: regl.prop('viewport')
+		},
+		viewport: regl.prop('viewport'),
+		stencil: false,
 
-    //update style
-    if ('lineWidth' in options) {
-      lineWidth = +options.lineWidth * .5
-    }
-    if ('capSize' in options) {
-      capSize = +options.capSize * .5
-    }
+		instances: regl.prop('count'),
+		count: WEIGHTS.length
+	})
 
-    //update errors
-    if (options.errors) {
-      //unroll errors
-      if (options.errors[0].length) {
-        let unrolled = []
-        for (let i = 0, l = options.errors.length; i<l; i++) {
-          unrolled[i*2] = options.errors[i][0]
-          unrolled[i*2+1] = options.errors[i][1]
-          unrolled[i*2+2] = options.errors[i][2]
-          unrolled[i*2+3] = options.errors[i][3]
-        }
-        errors = unrolled
-      }
-      else {
-        errors = options.errors
-      }
+	//expose API
+	extend(error2d, {
+		update: update,
+		draw: draw,
+		destroy: destroy,
+		regl: regl,
+		gl: gl,
+		canvas: gl.canvas,
+		groups: groups
+	})
 
-      errorBuffer(errors)
-    }
+	function error2d (opts) {
+		//update
+		if (opts) {
+			update(opts)
+		}
 
-    //update positions
-    if (options.data) options.positions = options.data
-    if (options.points) options.positions = options.points
-    if (options.positions && options.positions.length) {
-      //unroll
-      let unrolled
-      if (options.positions[0].length) {
-        unrolled = Array(options.positions.length)
-        for (let i = 0, l = options.positions.length; i<l; i++) {
-          unrolled[i*2] = options.positions[i][0]
-          unrolled[i*2+1] = options.positions[i][1]
-        }
-      }
-      else {
-        unrolled = options.positions
-      }
+		//destroy
+		else if (opts === null) {
+			destroy()
+		}
 
-      positions = unrolled
-      count = Math.floor(positions.length / 2)
-      bounds = getBounds(positions, 2)
-
-      positionBuffer(positions)
-    }
-
-    //process colors
-    if (options.colors) options.color = options.colors
-    if (options.color) {
-      let colors = options.color
-
-      if (!Array.isArray(colors)) {
-        colors = [colors]
-      }
-
-      if (colors.length > 1 && colors.length != count) throw Error('Not enough colors')
+		draw(opts)
+	}
 
 
-      if (colors.length > 1) {
-        color = new Uint8Array(count * 4)
+	//main draw method
+	function draw (options) {
+		if (typeof options === 'number') return drawGroup(options)
 
-        //convert colors to float arrays
-        for (let i = 0; i < colors.length; i++) {
-          if (typeof colors[i] === 'string') {
-            colors[i] = rgba(colors[i], false)
-          }
-          color[i*4] = colors[i][0]
-          color[i*4 + 1] = colors[i][1]
-          color[i*4 + 2] = colors[i][2]
-          color[i*4 + 3] = colors[i][3] * 255
-        }
-        colorBuffer(color)
-      }
-      else {
-        color = rgba(colors[0], false)
-        color[3] *= 255
-        color = new Uint8Array(color)
-      }
-    }
+		//make options a batch
+		if (options && !Array.isArray(options)) options = [options]
 
-    //FIXME: process databox
-    if (!options.range && !range) options.range = bounds
+		//render multiple polylines via regl batch
+		groups.filter(s => s && s.count && s.color && s.opacity && s.positions)
+			.forEach((s, i) => {
+			if (options) {
+				if (!options[i]) s.draw = false
+				else s.draw = true
+			}
 
-    //update range
-    if (options.range) {
-      range = options.range
-    }
+			//ignore draw flag for one pass
+			if (!s.draw) {
+				s.draw = true;
+				return
+			}
 
-    //update visible attribs
-    if ('viewport' in options) {
-      viewport = rect(options.viewport)
-    }
-    if ('scissor' in options) {
-      scissor = rect(options.scissor)
-    }
-  }
+			drawGroup(i)
+		})
+	}
 
-  //return viewport/scissor rectangle object from arg
-  function rect(arg) {
-      if (Array.isArray(options.viewport)) {
-        return {x: arg[0], y: arg[1], width: arg[2], height: arg[3]}
-      }
-      else if (arg) {
-        return {
-          x: arg.x || arg.left || 0,
-          y: arg.y || arg.top || 0,
-          width: arg.w || arg.width || 0,
-          height: arg.h || arg.height || 0
-        }
-      }
-  }
+	//draw single error group by id
+	function drawGroup (s) {
+		if (typeof s === 'number') s = groups[s]
 
-  return draw
+		if (!s) return
+
+		s.scaleRatio = [
+			s.scale[0] * s.viewport.width,
+			s.scale[1] * s.viewport.height
+		]
+
+		drawErrors(s)
+
+		if (s.after) s.after(s)
+	}
+
+	function update (options) {
+		//direct points argument
+		if (options.length != null) {
+			if (typeof options[0] === 'number') options = {positions: options}
+		}
+
+		//make options a batch
+		if (!Array.isArray(options)) options = [options]
+
+		//global count of points
+		let pointCount = 0, errorCount = 0
+
+		groups = options.map((options, i) => {
+			let group = groups[i]
+
+			if (!options) options = {}
+			else if (typeof options === 'function') options = {after: options}
+			else if (typeof options[0] === 'number') options = {positions: options}
+
+			//copy options to avoid mutation & handle aliases
+			options = pick(options, {
+				color: 'color colors fill',
+				capSize: 'capSize cap capsize cap-size',
+				lineWidth: 'lineWidth line-width width line',
+				opacity: 'opacity alpha',
+				range: 'range dataBox',
+				viewport: 'viewport viewBox',
+				errors: 'errors error',
+				positions: 'positions position data points'
+			})
+
+			if (!group) {
+				groups[i] = group = {
+					id: i,
+					scale: null,
+					translate: null,
+					scaleFract: null,
+					translateFract: null,
+					draw: true
+				}
+				options = extend({}, defaultOptions, options)
+			}
+
+			updateDiff(group, options, [{
+				lineWidth: v => +v * .5,
+				capSize: v => +v * .5,
+				opacity: parseFloat,
+				errors: errors => {
+					errors = flatten(errors)
+
+					errorCount += errors.length
+					return errors
+				},
+				positions: (positions, state) => {
+					positions = flatten(positions)
+					state.count = Math.floor(positions.length / 2)
+					state.bounds = getBounds(positions, 2)
+					state.offset = pointCount
+
+					pointCount += state.count
+
+					return positions
+				},
+				range: (range, state, options) => {
+					let bounds = state.bounds
+					if (!range) range = bounds
+
+					state.scale = [1 / (range[2] - range[0]), 1 / (range[3] - range[1])]
+					state.translate = [-range[0], -range[1]]
+
+					state.scaleFract = fract32(state.scale)
+					state.translateFract = fract32(state.translate)
+
+					return range
+				},
+
+				viewport: vp => {
+					let viewport
+
+					if (Array.isArray(vp)) {
+						viewport = {
+							x: vp[0],
+							y: vp[1],
+							width: vp[2] - vp[0],
+							height: vp[3] - vp[1]
+						}
+					}
+					else if (vp) {
+						viewport = {
+							x: vp.x || vp.left || 0,
+							y: vp.y || vp.top || 0
+						}
+
+						if (vp.right) viewport.width = vp.right - viewport.x
+						else viewport.width = vp.w || vp.width || 0
+
+						if (vp.bottom) viewport.height = vp.bottom - viewport.y
+						else viewport.height = vp.h || vp.height || 0
+					}
+					else {
+						viewport = {
+							x: 0, y: 0,
+							width: gl.drawingBufferWidth,
+							height: gl.drawingBufferHeight
+						}
+					}
+
+					return viewport
+				}
+			}, {
+				color: (colors, state) => {
+					let count = state.count
+
+					if (!colors) colors = 'transparent'
+
+					// 'black' or [0,0,0,0] case
+					if (!Array.isArray(colors) || typeof colors[0] === 'number') {
+						colors = Array(count).fill(colors)
+					}
+
+					if (colors.length < count) throw Error('Not enough colors')
+
+					let colorData = new Uint8Array(count * 4)
+
+					//convert colors to float arrays
+					for (let i = 0; i < count; i++) {
+						let c = colors[i]
+						if (typeof c === 'string') {
+							c = rgba(c, false)
+						}
+						colorData[i*4] = c[0]
+						colorData[i*4 + 1] = c[1]
+						colorData[i*4 + 2] = c[2]
+						colorData[i*4 + 3] = c[3] * 255
+					}
+
+					return colorData
+				}
+			}])
+
+			return group
+		})
+
+		if (pointCount || errorCount) {
+			let len = groups.reduce((acc, group, i) => {
+				return acc + group.count
+			}, 0)
+
+			let positionData = new Float64Array(len * 2)
+			let colorData = new Uint8Array(len * 4)
+			let errorData = new Float32Array(len * 4)
+
+			groups.forEach((group, i) => {
+				let {positions, count, offset, color, errors} = group
+				if (!count) return
+
+				colorData.set(color, offset * 4)
+				errorData.set(errors, offset * 4)
+				positionData.set(positions, offset * 2)
+			})
+
+			positionBuffer(float32(positionData))
+			positionFractBuffer(fract32(positionData))
+			colorBuffer(colorData)
+			errorBuffer(errorData)
+		}
+
+	}
+
+	function destroy () {
+		positionBuffer.destroy()
+		positionFractBuffer.destroy()
+		colorBuffer.destroy()
+		errorBuffer.destroy()
+		meshBuffer.destroy()
+		regl.destroy()
+	}
+
+	return error2d
+}
+
+//return fractional part of float32 array
+function fract32 (arr) {
+	let fract = new Float32Array(arr.length)
+	fract.set(arr)
+	for (let i = 0, l = fract.length; i < l; i++) {
+		fract[i] = arr[i] - fract[i]
+	}
+	return fract
+}
+function float32 (arr) {
+	if (arr instanceof Float32Array) return arr
+
+	let float = new Float32Array(arr)
+	float.set(arr)
+	return float
 }
