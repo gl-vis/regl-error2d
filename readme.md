@@ -47,6 +47,7 @@ Option | Default | Description
 `capSize` | `5` | Error bar cap size, in pixels
 `lineWidth` | `1` | Error bar line width, in pixels
 `color`, `colors` | `'red'` | Color or array with colors. Each color can be a css color string or an array with float `0..1` values.
+`opacity` | `1` | Error bars opacity
 `range` | `null` | Limit visible data
 `viewport` | `null` | Limit visible area within the canvas
 

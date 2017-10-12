@@ -192,8 +192,11 @@ function Error2D (options) {
 
 		varying vec4 fragColor;
 
+		uniform float opacity;
+
 		void main() {
 			gl_FragColor = fragColor / 255.;
+			gl_FragColor.a *= opacity;
 		}
 		`,
 
@@ -201,6 +204,7 @@ function Error2D (options) {
 			range: regl.prop('range'),
 			lineWidth: regl.prop('lineWidth'),
 			capSize: regl.prop('capSize'),
+			opacity: regl.prop('opacity'),
 			scale: regl.prop('scale'),
 			translate: regl.prop('translate'),
 			scaleFract: regl.prop('scaleFract'),
@@ -313,6 +317,9 @@ function Error2D (options) {
 		//make options a batch
 		if (options && !Array.isArray(options)) options = [options]
 
+
+		regl._refresh()
+
 		//render multiple polylines via regl batch
 		groups.filter(s => s && s.count && s.color && s.opacity && s.positions)
 			.forEach((s, i) => {
@@ -409,7 +416,37 @@ function Error2D (options) {
 					pointCount += state.count
 
 					return positions
+				}
+			}, {
+				color: (colors, state) => {
+					let count = state.count
+
+					if (!colors) colors = 'transparent'
+
+					// 'black' or [0,0,0,0] case
+					if (!Array.isArray(colors) || typeof colors[0] === 'number') {
+						colors = Array(count).fill(colors)
+					}
+
+					if (colors.length < count) throw Error('Not enough colors')
+
+					let colorData = new Uint8Array(count * 4)
+
+					//convert colors to float arrays
+					for (let i = 0; i < count; i++) {
+						let c = colors[i]
+						if (typeof c === 'string') {
+							c = rgba(c, false)
+						}
+						colorData[i*4] = c[0]
+						colorData[i*4 + 1] = c[1]
+						colorData[i*4 + 2] = c[2]
+						colorData[i*4 + 3] = c[3] * 255
+					}
+
+					return colorData
 				},
+
 				range: (range, state, options) => {
 					let bounds = state.bounds
 					if (!range) range = bounds
@@ -455,35 +492,6 @@ function Error2D (options) {
 					}
 
 					return viewport
-				}
-			}, {
-				color: (colors, state) => {
-					let count = state.count
-
-					if (!colors) colors = 'transparent'
-
-					// 'black' or [0,0,0,0] case
-					if (!Array.isArray(colors) || typeof colors[0] === 'number') {
-						colors = Array(count).fill(colors)
-					}
-
-					if (colors.length < count) throw Error('Not enough colors')
-
-					let colorData = new Uint8Array(count * 4)
-
-					//convert colors to float arrays
-					for (let i = 0; i < count; i++) {
-						let c = colors[i]
-						if (typeof c === 'string') {
-							c = rgba(c, false)
-						}
-						colorData[i*4] = c[0]
-						colorData[i*4 + 1] = c[1]
-						colorData[i*4 + 2] = c[2]
-						colorData[i*4 + 3] = c[3] * 255
-					}
-
-					return colorData
 				}
 			}])
 
