@@ -161,14 +161,14 @@ function Error2D (options) {
 
 		attribute vec2 direction, lineOffset, capOffset;
 
-		uniform vec2 pixelScale;
+		uniform vec4 viewport;
 		uniform float lineWidth, capSize;
 		uniform vec2 scale, scaleFract, translate, translateFract;
 
 		varying vec4 fragColor;
 
 		void main() {
-			fragColor = color;
+			fragColor = color / 255.;
 
 			vec2 pixelOffset = lineWidth * lineOffset + (capSize + lineWidth) * capOffset;
 
@@ -181,7 +181,7 @@ function Error2D (options) {
 				+ (position + translate) * scaleFract
 				+ (positionFract + translateFract) * scaleFract;
 
-			pos += pixelScale * pixelOffset;
+			pos += pixelOffset / viewport.zw;
 
 			gl_Position = vec4(pos * 2. - 1., 0, 1);
 		}
@@ -195,7 +195,7 @@ function Error2D (options) {
 		uniform float opacity;
 
 		void main() {
-			gl_FragColor = fragColor / 255.;
+			gl_FragColor = fragColor;
 			gl_FragColor.a *= opacity;
 		}
 		`,
@@ -209,10 +209,7 @@ function Error2D (options) {
 			translate: regl.prop('translate'),
 			scaleFract: regl.prop('scaleFract'),
 			translateFract: regl.prop('translateFract'),
-			pixelScale: ctx => [
-				ctx.pixelRatio / ctx.viewportWidth,
-				ctx.pixelRatio / ctx.viewportHeight
-			]
+			viewport: (ctx, prop) => [prop.viewport.x, prop.viewport.y, ctx.viewportWidth, ctx.viewportHeight]
 		},
 
 		attributes: {
@@ -321,8 +318,7 @@ function Error2D (options) {
 		regl._refresh()
 
 		//render multiple polylines via regl batch
-		groups.filter(s => s && s.count && s.color && s.opacity && s.positions)
-			.forEach((s, i) => {
+		groups.forEach((s, i) => {
 			if (options) {
 				if (!options[i]) s.draw = false
 				else s.draw = true
@@ -342,7 +338,7 @@ function Error2D (options) {
 	function drawGroup (s) {
 		if (typeof s === 'number') s = groups[s]
 
-		if (!s) return
+		if (!(s && s.count && s.color && s.opacity && s.positions && s.positions.length > 1)) return
 
 		s.scaleRatio = [
 			s.scale[0] * s.viewport.width,

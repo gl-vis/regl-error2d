@@ -31,8 +31,8 @@ let drawErrors = createErrors({
 	// positions: [0,0, 10,10, -10,-10],
 	// errors: [0,0,0,0, 0,0,0,0, 0,0,0,0],
 
-	capSize: 10,
-	lineWidth: 2,
+	capSize: 20,
+	lineWidth: 1,
 
 	color: Array(N).fill(0).map(() => colors[Math.floor(Math.random() * colors.length)]),
 	// color: 'rgba(0, 0, 127, 1)',
