@@ -32,19 +32,15 @@ error2d({
 
 ### `createError2d(regl, options?)`
 
-Create a new error2d instance based on initial options. Note that `regl` instance should have `ANGLE_instanced_arrays` extension.
+Create new error2d instance from `regl` and initial `options`. Note that `regl` instance should have `ANGLE_instanced_arrays` extension enabled.
 
 ### `error2d(options|list?)`
 
-Render error2d, optionally update rendering state from `options`. A list of options can be passed for batch rendering:
+Draw error2d, update options. A list of options can be passed for batch rendering:
 
 ```js
 error2d([options1, options2, ...])
 ```
-
-### `error2d.update(options|list)`
-
-Update options, not incurring redraw.
 
 Option | Default | Description
 ---|---|---
@@ -57,9 +53,13 @@ Option | Default | Description
 `range`, `dataBox` | `null` | Visible data range.
 `viewport`, `viewBox` | `null` | Output area within the canvas.
 
+### `error2d.update(options|list)`
+
+Update options, not incurring redraw.
+
 ### `error2d.draw(id?)`
 
-Draw error2d based on current rendering state/data. `id` integer can specify a group to draw, defined via batch rendering.
+Draw errors based on last options. `id` integer can specify a group to redraw for batch rendering.
 
 ### `error2d.destroy()`
 
