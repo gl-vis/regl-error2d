@@ -6,10 +6,10 @@ Draw error bars for a set of points with regl.
 
 Remake on [gl-error2d](https://github.com/gl-vis/gl-error2d):
 
-* `color` may take list of colors for per-point color.
+* `color` may define per-bar colors.
 * max number of points extended 40 times (from `1e5` to `4e6`) via instanced draw.
-* `lineWidth` and `capSize` are fixed to reflect actual pixels.
-* enhanced performance by delegating range calculations to vertex shader.
+* `lineWidth` and `capSize` are adjusted to actual pixels.
+* enhanced performance via vertex shader.
 
 [Demo](https://dfcreative.github.io/regl-error2d).
 
@@ -30,11 +30,11 @@ error2d({
 })
 ```
 
-## `createError2d(regl, options?)`
+### `createError2d(regl, options?)`
 
-Create a new error2d instance based on initial options. Note that `regl` instance requires `ANGLE_instanced_arrays` extension.
+Create a new error2d instance based on initial options. Note that `regl` instance should have `ANGLE_instanced_arrays` extension.
 
-## `error2d(options|list?)`
+### `error2d(options|list?)`
 
 Render error2d, optionally update rendering state from `options`. A list of options can be passed for batch rendering:
 
@@ -42,7 +42,7 @@ Render error2d, optionally update rendering state from `options`. A list of opti
 error2d([options1, options2, ...])
 ```
 
-## `error2d.update(options|list)`
+### `error2d.update(options|list)`
 
 Update options, not incurring redraw.
 
@@ -57,11 +57,11 @@ Option | Default | Description
 `range`, `dataBox` | `null` | Visible data range.
 `viewport`, `viewBox` | `null` | Output area within the canvas.
 
-## `error2d.draw(id?)`
+### `error2d.draw(id?)`
 
 Draw error2d based on current rendering state/data. `id` integer can specify a group to draw, defined via batch rendering.
 
-## `error2d.destroy()`
+### `error2d.destroy()`
 
 Dispose error2d and associated resources.
 
