@@ -1,6 +1,5 @@
 'use strict'
 
-const createRegl = require('regl')
 const getBounds = require('array-bounds')
 const rgba = require('color-rgba')
 const updateDiff = require('update-diff')
@@ -69,14 +68,24 @@ const WEIGHTS = [
 ]
 
 
-function Error2D (options) {
-	if (!options) options = {}
-	else if (typeof options === 'function') options = {regl: options}
-	else if (options.length) options = {positions: options}
+function Error2D (regl, options) {
+	if (typeof regl === 'function') {
+		if (!options) options = {}
+		options.regl = regl
+	}
+	else {
+		options = regl
+	}
+	if (options.length) options.positions = options
+	regl = options.regl
+
+	if (!regl.hasExtension('ANGLE_instanced_arrays')) {
+      throw 'regl-error2d requires `ANGLE_instanced_arrays` extension enabled';
+    }
 
 	// persistent variables
-	let regl, gl, drawErrors, positionBuffer, positionFractBuffer, colorBuffer, errorBuffer, meshBuffer,
-			defaultOptions = {
+	let gl = regl._gl, drawErrors, positionBuffer, positionFractBuffer, colorBuffer, errorBuffer, meshBuffer,
+			defaults = {
 				color: 'black',
 				capSize: 5,
 				lineWidth: 1,
@@ -88,34 +97,7 @@ function Error2D (options) {
 				bounds: null,
 				positions: [],
 				errors: []
-			}
-
-	let groups = []
-
-
-	// regl instance
-	if (options.regl) regl = options.regl
-
-	// container/gl/canvas case
-	else {
-		let opts
-
-		if (options instanceof HTMLCanvasElement) opts = {canvas: options}
-		else if (options instanceof HTMLElement) opts = {container: options}
-		else if (options.drawingBufferWidth || options.drawingBufferHeight) opts = {gl: options}
-
-		else {
-			opts = pick(options, 'pixelRatio canvas container gl extensions')
-		}
-
-		if (!opts.extensions) opts.extensions = []
-
-		opts.extensions.push('ANGLE_instanced_arrays')
-
-		regl = createRegl(opts)
-	}
-
-	gl = regl._gl
+			}, groups = []
 
 	//color per-point
 	colorBuffer = regl.buffer({
@@ -292,6 +274,8 @@ function Error2D (options) {
 		groups: groups
 	})
 
+	return error2d
+
 	function error2d (opts) {
 		//update
 		if (opts) {
@@ -373,7 +357,7 @@ function Error2D (options) {
 			options = pick(options, {
 				color: 'color colors fill',
 				capSize: 'capSize cap capsize cap-size',
-				lineWidth: 'lineWidth line-width width line',
+				lineWidth: 'lineWidth line-width width line thickness',
 				opacity: 'opacity alpha',
 				range: 'range dataBox',
 				viewport: 'viewport viewBox',
@@ -390,7 +374,7 @@ function Error2D (options) {
 					translateFract: null,
 					draw: true
 				}
-				options = extend({}, defaultOptions, options)
+				options = extend({}, defaults, options)
 			}
 
 			updateDiff(group, options, [{
@@ -528,8 +512,6 @@ function Error2D (options) {
 		meshBuffer.destroy()
 		regl.destroy()
 	}
-
-	return error2d
 }
 
 //return fractional part of float32 array

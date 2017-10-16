@@ -18,38 +18,53 @@ Remake on [gl-error2d](https://github.com/gl-vis/gl-error2d):
 [![npm install regl-error2d](https://nodei.co/npm/regl-error2d.png?mini=true)](https://npmjs.org/package/regl-error2d/)
 
 ```js
-let drawErrors = require('regl-error2d')(require('regl')())
+let regl = require('regl')({extensions: 'angle_instanced_arrays'})
+let createError2d = require('regl-error2d')
 
-drawErrors({
-  positions: data,
+let error2d = createError2d(regl)
+
+error2d({
+  positions: [0,0, .5,0, ...],
+  errors: [.5,.5,.5,.6, .2,.3,.4,.1, ...],
   color: 'rgba(0, 100, 200, .75)'
 })
 ```
 
-## `drawErrors = require('regl-error2d')(options|regl)`
+## `createError2d(regl, options?)`
 
-Create a function drawing error bars for points.
+Create a new error2d instance based on initial options. Note that `regl` instance requires `ANGLE_instanced_arrays` extension.
+
+## `error2d(options|list?)`
+
+Render error2d, optionally update rendering state from `options`. A list of options can be passed for batch rendering:
+
+```js
+error2d([options1, options2, ...])
+```
+
+## `error2d.update(options|list)`
+
+Update options, not incurring redraw.
 
 Option | Default | Description
 ---|---|---
-`regl` | `null` | Regl instance to reuse, otherwise new regl is created.
-`gl`, `canvas`, `container` | `null` | Options for `regl`, if new regl is created.
-`...rest` | | `drawErrors(rest)` is invoked with the rest of options.
-
-## `drawErrors(points|options?)`
-
-Redraw points and optionally update options.
-
-Option | Default | Description
----|---|---
-`positions`, `points` | `[]` | An array of unrolled xy coordinates of the points as `[x,y, x,y, ...]` or array of points `[[x,y], [x,y], ...]`.
-`errors` | `[]` | Array with error values corresponding to the points `[e0l,e0r,e0b,e0t, e1l,e1r,e1b,e1t, ...]`
-`capSize` | `5` | Error bar cap size, in pixels
-`lineWidth` | `1` | Error bar line width, in pixels
+`positions`, `points`, `data` | `[]` | An array of unrolled xy coordinates of the points as `[x,y, x,y, ...]` or array of points `[[x,y], [x,y], ...]`.
+`errors`, `error` | `[]` | Array with error values corresponding to the points `[e0l,e0r,e0b,e0t, e1l,e1r,e1b,e1t, ...]`
+`capSize`, `cap` | `5` | Error bar cap size, in pixels
+`lineWidth`, `thickness` | `1` | Error bar line width, in pixels
 `color`, `colors` | `'red'` | Color or array with colors. Each color can be a css color string or an array with float `0..1` values.
-`opacity` | `1` | Error bars opacity
-`range` | `null` | Limit visible data
-`viewport` | `null` | Limit visible area within the canvas
+`opacity` | `1` | Error bars opacity.
+`range`, `dataBox` | `null` | Visible data range.
+`viewport`, `viewBox` | `null` | Output area within the canvas.
+
+## `error2d.draw(id?)`
+
+Draw error2d based on current rendering state/data. `id` integer can specify a group to draw, defined via batch rendering.
+
+## `error2d.destroy()`
+
+Dispose error2d and associated resources.
+
 
 ## License
 

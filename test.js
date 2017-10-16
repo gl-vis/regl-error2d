@@ -8,6 +8,7 @@ const random = require('gauss-random')
 const rgba = require('color-rgba')
 const nanoraf = require('nanoraf')
 const palettes = require('nice-color-palettes')
+const regl = require('regl')({extensions: 'angle_instanced_arrays'})
 
 
 let N = 1e3
@@ -24,14 +25,14 @@ for(var i=0; i<2*N; ++i) {
 	errors[i*2+1] = Math.random() / 2 //1
 }
 
-let drawErrors = createErrors({
+let drawErrors = createErrors(regl, {
 	positions: positions,
 	errors: errors,
 
 	// positions: [0,0, 10,10, -10,-10],
 	// errors: [0,0,0,0, 0,0,0,0, 0,0,0,0],
 
-	capSize: 20,
+	capSize: 10,
 	lineWidth: 1,
 
 	color: Array(N).fill(0).map(() => colors[Math.floor(Math.random() * colors.length)]),

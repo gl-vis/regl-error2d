@@ -27,10 +27,10 @@
     "flatten-vertex-data": "^1.0.0",
     "object-assign": "^4.1.1",
     "pick-by-alias": "^1.1.1",
-    "regl": "^1.3.0",
     "update-diff": "^1.0.2"
   },
   "devDependencies": {
+    "regl": "^1.3.0",
     "bubleify": "^0.7.0",
     "nice-color-palettes": "^2.0.0",
     "next-pow-2": "^1.0.0",
