@@ -36,7 +36,7 @@ Create new error2d instance from `regl` and initial `options`. Note that `regl` 
 
 ### `error2d(options|list?)`
 
-Draw error2d, update options.
+Draw errors, update options.
 
 Option | Default | Description
 ---|---|---
@@ -61,7 +61,7 @@ Update options, not incurring redraw.
 
 ### `error2d.draw(id?)`
 
-Draw errors based on last options. `id` integer can specify a group to redraw for batch rendering.
+Draw errors based on last options. `id` integer can specify a list item to redraw from batch update.
 
 ### `error2d.destroy()`
 
