@@ -36,11 +36,7 @@ Create new error2d instance from `regl` and initial `options`. Note that `regl` 
 
 ### `error2d(options|list?)`
 
-Draw error2d, update options. A list of options can be passed for batch rendering:
-
-```js
-error2d([options1, options2, ...])
-```
+Draw error2d, update options.
 
 Option | Default | Description
 ---|---|---
@@ -52,6 +48,12 @@ Option | Default | Description
 `opacity` | `1` | Error bars opacity.
 `range`, `dataBox` | `null` | Visible data range.
 `viewport`, `viewBox` | `null` | Output area within the canvas.
+
+A list of options can be passed for batch rendering:
+
+```js
+error2d([options1, options2, ...])
+```
 
 ### `error2d.update(options|list)`
 
