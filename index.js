@@ -80,7 +80,7 @@ function Error2D (regl, options) {
 	regl = options.regl
 
 	if (!regl.hasExtension('ANGLE_instanced_arrays')) {
-      throw 'regl-error2d requires `ANGLE_instanced_arrays` extension enabled';
+      throw Error('regl-error2d: `ANGLE_instanced_arrays` extension should be enabled');
     }
 
 	// persistent variables
