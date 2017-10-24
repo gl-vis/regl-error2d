@@ -23,7 +23,7 @@
   "homepage": "https://github.com/dfcreative/regl-error2d#readme",
   "dependencies": {
     "array-bounds": "^1.0.1",
-    "color-rgba": "^1.1.0",
+    "color-normalize": "^1.0.0",
     "flatten-vertex-data": "^1.0.0",
     "object-assign": "^4.1.1",
     "pick-by-alias": "^1.1.1",

@@ -1,7 +1,7 @@
 'use strict'
 
 const getBounds = require('array-bounds')
-const rgba = require('color-rgba')
+const rgba = require('color-normalize')
 const updateDiff = require('update-diff')
 const pick = require('pick-by-alias')
 const extend = require('object-assign')
@@ -80,8 +80,8 @@ function Error2D (regl, options) {
 	regl = options.regl
 
 	if (!regl.hasExtension('ANGLE_instanced_arrays')) {
-      throw Error('regl-error2d: `ANGLE_instanced_arrays` extension should be enabled');
-    }
+		throw Error('regl-error2d: `ANGLE_instanced_arrays` extension should be enabled');
+	}
 
 	// persistent variables
 	let gl = regl._gl, drawErrors, positionBuffer, positionFractBuffer, colorBuffer, errorBuffer, meshBuffer,
@@ -414,14 +414,8 @@ function Error2D (regl, options) {
 
 					//convert colors to float arrays
 					for (let i = 0; i < count; i++) {
-						let c = colors[i]
-						if (typeof c === 'string') {
-							c = rgba(c, false)
-						}
-						colorData[i*4] = c[0]
-						colorData[i*4 + 1] = c[1]
-						colorData[i*4 + 2] = c[2]
-						colorData[i*4 + 3] = c[3] * 255
+						let c = rgba(colors[i], 'uint8')
+						colorData.set(c, i * 4)
 					}
 
 					return colorData
@@ -510,7 +504,6 @@ function Error2D (regl, options) {
 		colorBuffer.destroy()
 		errorBuffer.destroy()
 		meshBuffer.destroy()
-		regl.destroy()
 	}
 }
 
