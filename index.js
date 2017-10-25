@@ -198,18 +198,22 @@ function Error2D (regl, options) {
 			//dynamic attributes
 			color: {
 				buffer: colorBuffer,
+				offset: (ctx, prop) => prop.offset * 4,
 				divisor: 1,
 			},
 			position: {
 				buffer: positionBuffer,
+				offset: (ctx, prop) => prop.offset * 4,
 				divisor: 1
 			},
 			positionFract: {
 				buffer: positionFractBuffer,
+				offset: (ctx, prop) => prop.offset * 4,
 				divisor: 1
 			},
 			error: {
 				buffer: errorBuffer,
+				offset: (ctx, prop) => prop.offset * 16,
 				divisor: 1
 			},
 
@@ -303,6 +307,8 @@ function Error2D (regl, options) {
 
 		//render multiple polylines via regl batch
 		groups.forEach((s, i) => {
+			if (!s) return
+
 			if (options) {
 				if (!options[i]) s.draw = false
 				else s.draw = true
@@ -321,6 +327,7 @@ function Error2D (regl, options) {
 	//draw single error group by id
 	function drawGroup (s) {
 		if (typeof s === 'number') s = groups[s]
+		if (s == null) return
 
 		if (!(s && s.count && s.color && s.opacity && s.positions && s.positions.length > 1)) return
 
@@ -349,7 +356,7 @@ function Error2D (regl, options) {
 		groups = options.map((options, i) => {
 			let group = groups[i]
 
-			if (!options) options = {}
+			if (!options) return group
 			else if (typeof options === 'function') options = {after: options}
 			else if (typeof options[0] === 'number') options = {positions: options}
 
@@ -474,7 +481,7 @@ function Error2D (regl, options) {
 
 		if (pointCount || errorCount) {
 			let len = groups.reduce((acc, group, i) => {
-				return acc + group.count
+				return acc + (group ? group.count : 0)
 			}, 0)
 
 			let positionData = new Float64Array(len * 2)
@@ -482,6 +489,7 @@ function Error2D (regl, options) {
 			let errorData = new Float32Array(len * 4)
 
 			groups.forEach((group, i) => {
+				if (!group) return
 				let {positions, count, offset, color, errors} = group
 				if (!count) return
 
