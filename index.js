@@ -203,12 +203,12 @@ function Error2D (regl, options) {
 			},
 			position: {
 				buffer: positionBuffer,
-				offset: (ctx, prop) => prop.offset * 4,
+				offset: (ctx, prop) => prop.offset * 8,
 				divisor: 1
 			},
 			positionFract: {
 				buffer: positionFractBuffer,
-				offset: (ctx, prop) => prop.offset * 4,
+				offset: (ctx, prop) => prop.offset * 8,
 				divisor: 1
 			},
 			error: {
@@ -342,13 +342,15 @@ function Error2D (regl, options) {
 	}
 
 	function update (options) {
+		if (!options) return
+
 		//direct points argument
 		if (options.length != null) {
-			if (typeof options[0] === 'number') options = {positions: options}
+			if (typeof options[0] === 'number') options = [{positions: options}]
 		}
 
 		//make options a batch
-		if (!Array.isArray(options)) options = [options]
+		else if (!Array.isArray(options)) options = [options]
 
 		//global count of points
 		let pointCount = 0, errorCount = 0
