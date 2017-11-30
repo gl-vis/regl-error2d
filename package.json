@@ -28,7 +28,7 @@
   "homepage": "https://github.com/dfcreative/regl-error2d#readme",
   "dependencies": {
     "array-bounds": "^1.0.1",
-    "bubleify": "^0.7.0",
+    "bubleify": "^1.0.0",
     "color-normalize": "^1.0.0",
     "flatten-vertex-data": "^1.0.0",
     "object-assign": "^4.1.1",
