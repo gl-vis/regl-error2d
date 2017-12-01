@@ -6,6 +6,7 @@ const updateDiff = require('update-diff')
 const pick = require('pick-by-alias')
 const extend = require('object-assign')
 const flatten = require('flatten-vertex-data')
+const {float32, fract32} = require('to-float32')
 
 module.exports = Error2D
 
@@ -291,7 +292,7 @@ function Error2D (regl, options) {
 			destroy()
 		}
 
-		draw(opts)
+		draw()
 	}
 
 
@@ -515,21 +516,4 @@ function Error2D (regl, options) {
 		errorBuffer.destroy()
 		meshBuffer.destroy()
 	}
-}
-
-//return fractional part of float32 array
-function fract32 (arr) {
-	let fract = new Float32Array(arr.length)
-	fract.set(arr)
-	for (let i = 0, l = fract.length; i < l; i++) {
-		fract[i] = arr[i] - fract[i]
-	}
-	return fract
-}
-function float32 (arr) {
-	if (arr instanceof Float32Array) return arr
-
-	let float = new Float32Array(arr)
-	float.set(arr)
-	return float
 }
