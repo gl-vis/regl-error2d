@@ -3,6 +3,5 @@ design
 instances
 *node_modules
 *.psd
-package-lock.json
 docs
 gh-pages
