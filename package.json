@@ -29,7 +29,6 @@
   "homepage": "https://github.com/dy/regl-error2d#readme",
   "dependencies": {
     "array-bounds": "^1.0.1",
-    "bubleify": "^2.0.0",
     "color-normalize": "^1.5.0",
     "flatten-vertex-data": "^1.0.2",
     "object-assign": "^4.1.1",
@@ -38,6 +37,7 @@
     "update-diff": "^1.1.0"
   },
   "devDependencies": {
+    "bubleify": "^2.0.0",
     "canvas-fit": "^1.5.0",
     "chttps": "^1.0.6",
     "color-rgba": "^2.1.1",
