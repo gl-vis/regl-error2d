@@ -33,7 +33,7 @@
     "flatten-vertex-data": "^1.0.2",
     "object-assign": "^4.1.1",
     "pick-by-alias": "^1.2.0",
-    "to-float32": "^1.0.1",
+    "to-float32": "^1.1.0",
     "update-diff": "^1.1.0"
   },
   "devDependencies": {

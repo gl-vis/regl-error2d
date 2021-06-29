@@ -505,8 +505,10 @@ function Error2D (regl, options) {
 				positionData.set(positions, offset * 2)
 			})
 
-			positionBuffer(float32(positionData))
-			positionFractBuffer(fract32(positionData))
+			var float_data = float32(positionData)
+			positionBuffer(float_data)
+			var frac_data = fract32(positionData, float_data)
+			positionFractBuffer(frac_data)
 			colorBuffer(colorData)
 			errorBuffer(errorData)
 		}
